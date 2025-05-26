@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Pet - PawPals</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-shadow {
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .hover-scale {
+            transition: transform 0.3s ease;
+        }
+        .hover-scale:hover {
+            transform: scale(1.02);
+        }
+        .file-upload {
+            border: 2px dashed #cbd5e0;
+            transition: all 0.3s ease;
+        }
+        .file-upload:hover {
+            border-color: #667eea;
+            background-color: #f7fafc;
+        }
+        .file-upload.dragover {
+            border-color: #667eea;
+            background-color: #ebf4ff;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <a href="{{ url_for('home') }}">
+                        <i class="fas fa-paw text-purple-600 text-2xl mr-2"></i>
+                        <span class="text-2xl font-bold text-gray-800">PawsHome</span>
+                    </a>
+                </div>
+                <div class="hidden md:flex space-x-6">
+                    <a href="{{ url_for('home') }}" class="text-gray-700 hover:text-purple-600 transition-colors">Browse Pets</a>
+                    <a href="{{ url_for('add_pet') }}" class="text-purple-600 font-semibold">Add Pet</a>
+                    <a href="{{ url_for('my_requests') }}" class="text-gray-700 hover:text-purple-600 transition-colors">My Requests</a>
+                    <a href="{{ url_for('my_adoption_requests') }}" class="text-gray-700 hover:text-purple-600 transition-colors">My Adoption Requests</a>
+                    <a href="{{ url_for('profile') }}" class="text-gray-700 hover:text-purple-600 transition-colors">Profile</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <i class="fas fa-bell text-gray-400 text-xl cursor-pointer hover:text-purple-600"></i>
+                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">0</span>
+                    </div>
+                    <div class="relative">
+                        <div id="user-menu-button" class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 px-3 py-2 rounded-lg">
+                            <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                                <i class="fas fa-user text-white text-sm"></i>
+                            </div>
+                            <span class="text-gray-700 font-medium">
+                                {% if session.user_name %}{{ session.user_name }}{% else %}Guest{% endif %}
+                            </span>
+                            <i class="fas fa-chevron-down text-gray-400 text-sm transition-transform duration-200" id="dropdown-arrow"></i>
+                        </div>
+                        <!-- Dropdown menu -->
+                        <div id="user-dropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border hidden z-50">
+                            <a href="{{ url_for('profile') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-t-lg">
+                                <i class="fas fa-user mr-2"></i>Profile
+                            </a>
+                            <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-cog mr-2"></i>Settings
+                            </a>
+                            <hr class="my-1">
+                            <a href="{{ url_for('logout') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-b-lg">
+                                <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="bg-white border-b">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    {% for category, message in messages %}
+                        <div class="p-4 rounded-lg mb-2 {% if category == 'error' %}bg-red-100 text-red-700 border border-red-300{% elif category == 'success' %}bg-green-100 text-green-700 border border-green-300{% else %}bg-blue-100 text-blue-700 border border-blue-300{% endif %}">
+                            <div class="flex items-center">
+                                <i class="fas {% if category == 'error' %}fa-exclamation-circle{% elif category == 'success' %}fa-check-circle{% else %}fa-info-circle{% endif %} mr-2"></i>
+                                {{ message }}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- Page Header -->
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">Add a Pet for Adoption</h2>
+                <p class="text-gray-600">Help your furry friend find their forever home</p>
+            </div>
+
+            <!-- Form Card -->
+            <div class="bg-white rounded-2xl shadow-lg p-8 hover-scale">
+                <form method="POST" action="{{ url_for('add_pet') }}" class="space-y-6">
+                    <!-- Pet Images Upload -->
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-3">Pet Photo 1 *</label>
+                            <div class="file-upload rounded-lg p-8 text-center cursor-pointer" onclick="document.getElementById('photo1').click()">
+                                <div id="preview1" class="hidden">
+                                    <img id="img1" class="w-full h-48 object-cover rounded-lg mb-4" alt="Pet Photo 1">
+                                    <p class="text-sm text-gray-600">Click to change photo</p>
+                                </div>
+                                <div id="placeholder1">
+                                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                                    <p class="text-gray-600 mb-2">Click to upload or drag and drop</p>
+                                    <p class="text-sm text-gray-500">PNG, JPG up to 5MB</p>
+                                </div>
+                                <input type="file" id="photo1" name="photo1" accept="image/*" class="hidden" onchange="previewImage(this, 'img1', 'preview1', 'placeholder1')">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-3">Pet Photo 2 *</label>
+                            <div class="file-upload rounded-lg p-8 text-center cursor-pointer" onclick="document.getElementById('photo2').click()">
+                                <div id="preview2" class="hidden">
+                                    <img id="img2" class="w-full h-48 object-cover rounded-lg mb-4" alt="Pet Photo 2">
+                                    <p class="text-sm text-gray-600">Click to change photo</p>
+                                </div>
+                                <div id="placeholder2">
+                                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                                    <p class="text-gray-600 mb-2">Click to upload or drag and drop</p>
+                                    <p class="text-sm text-gray-500">PNG, JPG up to 5MB</p>
+                                </div>
+                                <input type="file" id="photo2" name="photo2" accept="image/*" class="hidden" onchange="previewImage(this, 'img2', 'preview2', 'placeholder2')">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Basic Information -->
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Pet Name *</label>
+                            <input type="text" name="pet_name" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Enter pet's name">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Pet Type *</label>
+                            <select name="pet_type" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                <option value="">Select pet type</option>
+                                <option value="dog">Dog</option>
+                                <option value="cat">Cat</option>
+                                <option value="bird">Bird</option>
+                                <option value="rabbit">Rabbit</option>
+                                <option value="hamster">Hamster</option>
+                                <option value="guinea-pig">Guinea Pig</option>
+                                <option value="fish">Fish</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Breed</label>
+                            <input type="text" name="breed" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="e.g., Golden Retriever">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Age *</label>
+                            <select name="age" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                <option value="">Select age</option>
+                                <option value="baby">Baby (0-1 year)</option>
+                                <option value="young">Young (1-3 years)</option>
+                                <option value="adult">Adult (3-7 years)</option>
+                                <option value="senior">Senior (7+ years)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Gender *</label>
+                            <select name="gender" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                <option value="">Select gender</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Size *</label>
+                            <select name="size" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                <option value="">Select size</option>
+                                <option value="small">Small (under 25 lbs)</option>
+                                <option value="medium">Medium (25-60 lbs)</option>
+                                <option value="large">Large (60-100 lbs)</option>
+                                <option value="extra-large">Extra Large (over 100 lbs)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Color</label>
+                            <input type="text" name="color" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="e.g., Brown, Black, White">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Weight (lbs)</label>
+                            <input type="number" name="weight" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Enter weight">
+                        </div>
+                    </div>
+
+                    <!-- Health Information -->
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-heartbeat text-purple-600 mr-2"></i>
+                            Health Information
+                        </h3>
+
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Vaccination Status *</label>
+                                <select name="vaccination_status" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                    <option value="">Select status</option>
+                                    <option value="up-to-date">Up to date</option>
+                                    <option value="partial">Partially vaccinated</option>
+                                    <option value="not-vaccinated">Not vaccinated</option>
+                                    <option value="unknown">Unknown</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Spayed/Neutered *</label>
+                                <select name="spayed_neutered" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                    <option value="">Select status</option>
+                                    <option value="yes">Yes</option>
+                                    <option value="no">No</option>
+                                    <option value="unknown">Unknown</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Medical History</label>
+                            <textarea name="medical_history" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none" placeholder="Any medical conditions, treatments, or special needs..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Personality & Behavior -->
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-smile text-purple-600 mr-2"></i>
+                            Personality & Behavior
+                        </h3>
+
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-3">Personality Traits</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="personality[]" value="friendly" class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
+                                        <span class="ml-2 text-sm">Friendly</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="personality[]" value="energetic" class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
+                                        <span class="ml-2 text-sm">Energetic</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="personality[]" value="calm" class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
+                                        <span class="ml-2 text-sm">Calm</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="personality[]" value="playful" class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
+                                        <span class="ml-2 text-sm">Playful</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="personality[]" value="loyal" class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
+                                        <span class="ml-2 text-sm">Loyal</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="personality[]" value="independent" class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
+                                        <span class="ml-2 text-sm">Independent</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-3">Good With</label>
+                                <div class="space-y-2">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="good_with[]" value="children" class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
+                                        <span class="ml-2 text-sm">Children</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="good_with[]" value="dogs" class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
+                                        <span class="ml-2 text-sm">Other Dogs</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="good_with[]" value="cats" class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
+                                        <span class="ml-2 text-sm">Cats</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Special Notes</label>
+                            <textarea name="special_notes" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none" placeholder="Any special care instructions, training status, or behavioral notes..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Contact Information -->
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-phone text-purple-600 mr-2"></i>
+                            Contact Information
+                        </h3>
+
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Preferred Contact Method *</label>
+                                <select name="contact_method" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                    <option value="">Select method</option>
+                                    <option value="email">Email</option>
+                                    <option value="phone">Phone</option>
+                                    <option value="both">Both</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                                <input type="tel" name="phone" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="+1 (555) 123-4567">
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Adoption Fee</label>
+                            <div class="flex items-center">
+                                <span class="text-gray-500 mr-2">$</span>
+                                <input type="number" name="adoption_fee" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="0.00" step="0.01">
+                                <span class="ml-3 text-sm text-gray-600">(Optional - leave blank for free adoption)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pet Story -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Pet's Story</label>
+                        <textarea name="pet_story" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none" placeholder="Tell us about this pet's background, why they need a new home, and what makes them special..."></textarea>
+                    </div>
+
+                    <!-- Terms and Submit -->
+                    <div class="border-t pt-6">
+                        <div class="flex items-start mb-6">
+                            <input type="checkbox" id="terms" name="terms" required class="mt-1 rounded border-gray-300 text-purple-600 focus:ring-purple-500">
+                            <label for="terms" class="ml-3 text-sm text-gray-600">
+                                I agree to the <a href="#" class="text-purple-600 hover:underline">Terms of Service</a> and confirm that all information provided is accurate. I understand that I am responsible for screening potential adopters and ensuring the pet goes to a suitable home.
+                            </label>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <button type="submit" class="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 px-6 rounded-lg font-medium hover:from-purple-600 hover:to-pink-600 transition duration-300">
+                                <i class="fas fa-heart mr-2"></i>List Pet for Adoption
+                            </button>
+                            <button type="button" class="flex-1 bg-gray-300 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-400 transition duration-300">
+                                <i class="fas fa-save mr-2"></i>Save as Draft
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-12 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div class="col-span-2">
+                    <div class="flex items-center space-x-2 mb-4">
+                        <i class="fas fa-paw text-purple-400 text-2xl"></i>
+                        <span class="text-2xl font-bold">PawsHome</span>
+                    </div>
+                    <p class="text-gray-400 mb-4">Connecting loving families with pets in need. Every adoption saves a life and creates a forever bond.</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="{{ url_for('home') }}" class="hover:text-white transition-colors">Browse Pets</a></li>
+                        <li><a href="{{ url_for('add_pet') }}" class="hover:text-white transition-colors">Add Pet</a></li>
+                        <li><a href="{{ url_for('my_requests') }}" class="hover:text-white transition-colors">My Requests</a></li>
+                        <li><a href="{{ url_for('profile') }}" class="hover:text-white transition-colors">Profile</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Support</h3>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Help Center</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Contact Us</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Privacy Policy</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Terms of Service</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2024 PawsHome. All rights reserved. Made with ❤️ for pets and their families.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // User dropdown functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const userMenuButton = document.getElementById('user-menu-button');
+            const userDropdown = document.getElementById('user-dropdown');
+            const dropdownArrow = document.getElementById('dropdown-arrow');
+
+            if (userMenuButton && userDropdown && dropdownArrow) {
+                userMenuButton.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    userDropdown.classList.toggle('hidden');
+                    dropdownArrow.classList.toggle('rotate-180');
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
+                        userDropdown.classList.add('hidden');
+                        dropdownArrow.classList.remove('rotate-180');
+                    }
+                });
+
+                // Close dropdown when pressing Escape
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        userDropdown.classList.add('hidden');
+                        dropdownArrow.classList.remove('rotate-180');
+                    }
+                });
+            }
+        });
+
+        // Image preview function
+        function previewImage(input, imgId, previewId, placeholderId) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById(imgId).src = e.target.result;
+                    document.getElementById(previewId).classList.remove('hidden');
+                    document.getElementById(placeholderId).classList.add('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // Drag and drop functionality
+        document.querySelectorAll('.file-upload').forEach(uploadArea => {
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const input = uploadArea.querySelector('input[type="file"]');
+                    input.files = files;
+
+                    // Trigger preview
+                    const imgId = input.id === 'photo1' ? 'img1' : 'img2';
+                    const previewId = input.id === 'photo1' ? 'preview1' : 'preview2';
+                    const placeholderId = input.id === 'photo1' ? 'placeholder1' : 'placeholder2';
+                    previewImage(input, imgId, previewId, placeholderId);
+                }
+            });
+        });
+
+        // Form validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            // Basic validation
+            const requiredFields = this.querySelectorAll('[required]');
+            let isValid = true;
+
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    isValid = false;
+                    field.classList.add('border-red-500');
+                } else {
+                    field.classList.remove('border-red-500');
+                }
+            });
+
+            if (!isValid) {
+                e.preventDefault(); // Only prevent submission if validation fails
+                alert('Please fill in all required fields.');
+                return false;
+            }
+
+            // If validation passes, let the form submit normally to Flask backend
+            // The form will be submitted to the action="{{ url_for('add_pet') }}" endpoint
+        });
+    </script>
+</body>
+</html>

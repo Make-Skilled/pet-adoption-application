@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adoption Requests - PawPals</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-shadow {
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .hover-scale {
+            transition: transform 0.3s ease;
+        }
+        .hover-scale:hover {
+            transform: scale(1.02);
+        }
+        .status-pending {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+        }
+        .status-approved {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+        .status-rejected {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <a href="{{ url_for('home') }}">
+                        <i class="fas fa-paw text-purple-600 text-2xl mr-2"></i>
+                        <span class="text-2xl font-bold text-gray-800">PawsHome</span>
+                    </a>
+                </div>
+                <div class="hidden md:flex space-x-6">
+                    <a href="{{ url_for('home') }}" class="text-gray-700 hover:text-purple-600 transition-colors">Browse Pets</a>
+                    <a href="{{ url_for('add_pet') }}" class="text-gray-700 hover:text-purple-600 transition-colors">Add Pet</a>
+                    <a href="{{ url_for('my_requests') }}" class="text-purple-600 font-semibold">My Requests</a>
+                    <a href="{{ url_for('my_adoption_requests') }}" class="text-gray-700 hover:text-purple-600 transition-colors">My Adoption Requests</a>
+                    <a href="{{ url_for('profile') }}" class="text-gray-700 hover:text-purple-600 transition-colors">Profile</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <i class="fas fa-bell text-gray-400 text-xl cursor-pointer hover:text-purple-600"></i>
+                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">{{ stats.pending }}</span>
+                    </div>
+                    <div class="relative">
+                        <div id="user-menu-button" class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 px-3 py-2 rounded-lg">
+                            <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                                <i class="fas fa-user text-white text-sm"></i>
+                            </div>
+                            <span class="text-gray-700 font-medium">
+                                {% if session.user_name %}{{ session.user_name }}{% else %}Guest{% endif %}
+                            </span>
+                            <i class="fas fa-chevron-down text-gray-400 text-sm transition-transform duration-200" id="dropdown-arrow"></i>
+                        </div>
+                        <!-- Dropdown menu -->
+                        <div id="user-dropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border hidden z-50">
+                            <a href="{{ url_for('profile') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-t-lg">
+                                <i class="fas fa-user mr-2"></i>Profile
+                            </a>
+                            <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-cog mr-2"></i>Settings
+                            </a>
+                            <hr class="my-1">
+                            <a href="{{ url_for('logout') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-b-lg">
+                                <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="bg-white border-b">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    {% for category, message in messages %}
+                        <div class="p-4 rounded-lg mb-2 {% if category == 'error' %}bg-red-100 text-red-700 border border-red-300{% elif category == 'success' %}bg-green-100 text-green-700 border border-green-300{% else %}bg-blue-100 text-blue-700 border border-blue-300{% endif %}">
+                            <div class="flex items-center">
+                                <i class="fas {% if category == 'error' %}fa-exclamation-circle{% elif category == 'success' %}fa-check-circle{% else %}fa-info-circle{% endif %} mr-2"></i>
+                                {{ message }}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="max-w-6xl mx-auto">
+            <!-- Page Header -->
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">Adoption Requests</h2>
+                <p class="text-gray-600">Manage requests from people who want to adopt your pets</p>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-2xl shadow-lg p-6 text-center hover-scale">
+                    <div class="w-12 h-12 mx-auto bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mb-3">
+                        <i class="fas fa-envelope text-white text-xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-800">{{ stats.total }}</h3>
+                    <p class="text-gray-600 text-sm">Total Requests</p>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-lg p-6 text-center hover-scale">
+                    <div class="w-12 h-12 mx-auto bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mb-3">
+                        <i class="fas fa-clock text-white text-xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-800">{{ stats.pending }}</h3>
+                    <p class="text-gray-600 text-sm">Pending</p>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-lg p-6 text-center hover-scale">
+                    <div class="w-12 h-12 mx-auto bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mb-3">
+                        <i class="fas fa-check text-white text-xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-800">{{ stats.approved }}</h3>
+                    <p class="text-gray-600 text-sm">Approved</p>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-lg p-6 text-center hover-scale">
+                    <div class="w-12 h-12 mx-auto bg-gradient-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center mb-3">
+                        <i class="fas fa-times text-white text-xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-800">{{ stats.rejected }}</h3>
+                    <p class="text-gray-600 text-sm">Rejected</p>
+                </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="bg-white rounded-2xl shadow-lg p-2 mb-8">
+                <div class="flex flex-wrap gap-2">
+                    <button id="filter-all" class="filter-btn active bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg font-medium" data-filter="all">All Requests</button>
+                    <button id="filter-pending" class="filter-btn text-gray-600 hover:text-purple-600 px-6 py-2 rounded-lg font-medium transition duration-300" data-filter="pending">Pending</button>
+                    <button id="filter-approved" class="filter-btn text-gray-600 hover:text-purple-600 px-6 py-2 rounded-lg font-medium transition duration-300" data-filter="approved">Approved</button>
+                    <button id="filter-rejected" class="filter-btn text-gray-600 hover:text-purple-600 px-6 py-2 rounded-lg font-medium transition duration-300" data-filter="rejected">Rejected</button>
+                </div>
+            </div>
+
+            <!-- Requests List -->
+            <div class="space-y-6">
+                {% if requests %}
+                    {% for request in requests %}
+                    <!-- Request Card -->
+                    <div class="request-card bg-white rounded-2xl shadow-lg p-6 hover-scale" data-status="{{ request.status }}">
+                        <div class="flex flex-col lg:flex-row lg:items-center gap-6">
+                            <div class="flex items-center gap-4">
+                                <!-- Pet Image Placeholder -->
+                                <div class="w-20 h-20 bg-gradient-to-br
+                                    {% if request.pet_type == 'dog' %}from-yellow-200 to-orange-300
+                                    {% elif request.pet_type == 'cat' %}from-pink-200 to-purple-300
+                                    {% elif request.pet_type == 'bird' %}from-blue-200 to-indigo-300
+                                    {% else %}from-green-200 to-teal-300{% endif %}
+                                    rounded-full flex items-center justify-center">
+                                    <i class="fas fa-{{ 'dog' if request.pet_type == 'dog' else 'cat' if request.pet_type == 'cat' else 'dove' if request.pet_type == 'bird' else 'paw' }} text-3xl text-white"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800">{{ request.pet_name }}</h3>
+                                    <p class="text-gray-600">{{ request.pet_type.title() }}</p>
+                                    <div class="flex items-center mt-1">
+                                        <span class="
+                                            {% if request.status == 'pending' %}bg-yellow-500
+                                            {% elif request.status == 'approved' %}bg-green-500
+                                            {% elif request.status == 'rejected' %}bg-red-500
+                                            {% else %}bg-gray-500{% endif %}
+                                            text-white text-xs px-2 py-1 rounded-full">
+                                            {{ request.status.title() }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <div class="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-user text-white"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-gray-800">{{ request.requester_name }}</h4>
+                                        <p class="text-sm text-gray-600">{{ request.requester_email }}</p>
+                                    </div>
+                                </div>
+
+                                <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                                    <h5 class="font-medium text-gray-800 mb-2">Request Message:</h5>
+                                    <p class="text-gray-600 text-sm">{{ request.message }}</p>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-4">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-calendar mr-2 text-purple-600"></i>
+                                        <span>Requested: {{ request.created_at.strftime('%B %d, %Y') }}</span>
+                                    </div>
+                                    {% if request.phone %}
+                                    <div class="flex items-center">
+                                        <i class="fas fa-phone mr-2 text-purple-600"></i>
+                                        <span>{{ request.phone }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if request.experience %}
+                                    <div class="flex items-center">
+                                        <i class="fas fa-star mr-2 text-purple-600"></i>
+                                        <span>Has experience</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if request.living_situation %}
+                                    <div class="flex items-center">
+                                        <i class="fas fa-home mr-2 text-purple-600"></i>
+                                        <span>{{ request.living_situation[:20] }}{% if request.living_situation|length > 20 %}...{% endif %}</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col sm:flex-row lg:flex-col gap-3">
+                                {% if request.status == 'pending' %}
+                                    <form method="POST" action="{{ url_for('manage_request', request_id=request._id, action='approve') }}" style="display: inline;">
+                                        <button type="submit" class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-2 rounded-lg hover:from-green-600 hover:to-green-700 transition duration-300">
+                                            <i class="fas fa-check mr-2"></i>Approve
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="{{ url_for('manage_request', request_id=request._id, action='reject') }}" style="display: inline;">
+                                        <button type="submit" class="w-full bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-2 rounded-lg hover:from-red-600 hover:to-red-700 transition duration-300">
+                                            <i class="fas fa-times mr-2"></i>Reject
+                                        </button>
+                                    </form>
+                                {% elif request.status == 'approved' %}
+                                    <button class="bg-green-500 text-white px-6 py-2 rounded-lg cursor-default" disabled>
+                                        <i class="fas fa-check mr-2"></i>Approved
+                                    </button>
+                                {% elif request.status == 'rejected' %}
+                                    <button class="bg-red-500 text-white px-6 py-2 rounded-lg cursor-default" disabled>
+                                        <i class="fas fa-times mr-2"></i>Rejected
+                                    </button>
+                                {% endif %}
+                                <button class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2 rounded-lg hover:from-blue-600 hover:to-blue-700 transition duration-300">
+                                    <i class="fas fa-envelope mr-2"></i>Message
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-12">
+                        <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
+                        <h3 class="text-xl font-semibold text-gray-600 mb-2">No adoption requests yet</h3>
+                        <p class="text-gray-500 mb-6">When people request to adopt your pets, they'll appear here.</p>
+                        <a href="{{ url_for('add_pet') }}" class="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>Add Your First Pet
+                        </a>
+                    </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-12 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div class="col-span-2">
+                    <div class="flex items-center space-x-2 mb-4">
+                        <i class="fas fa-paw text-purple-400 text-2xl"></i>
+                        <span class="text-2xl font-bold">PawsHome</span>
+                    </div>
+                    <p class="text-gray-400 mb-4">Connecting loving families with pets in need. Every adoption saves a life and creates a forever bond.</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="{{ url_for('home') }}" class="hover:text-white transition-colors">Browse Pets</a></li>
+                        <li><a href="{{ url_for('add_pet') }}" class="hover:text-white transition-colors">Add Pet</a></li>
+                        <li><a href="{{ url_for('my_requests') }}" class="hover:text-white transition-colors">My Requests</a></li>
+                        <li><a href="{{ url_for('profile') }}" class="hover:text-white transition-colors">Profile</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Support</h3>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Help Center</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Contact Us</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Privacy Policy</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Terms of Service</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2024 PawsHome. All rights reserved. Made with ❤️ for pets and their families.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // User dropdown functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const userMenuButton = document.getElementById('user-menu-button');
+            const userDropdown = document.getElementById('user-dropdown');
+            const dropdownArrow = document.getElementById('dropdown-arrow');
+
+            if (userMenuButton && userDropdown && dropdownArrow) {
+                userMenuButton.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    userDropdown.classList.toggle('hidden');
+                    dropdownArrow.classList.toggle('rotate-180');
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
+                        userDropdown.classList.add('hidden');
+                        dropdownArrow.classList.remove('rotate-180');
+                    }
+                });
+
+                // Close dropdown when pressing Escape
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        userDropdown.classList.add('hidden');
+                        dropdownArrow.classList.remove('rotate-180');
+                    }
+                });
+            }
+        });
+
+        // Filter functionality for requests
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Remove active class from all buttons
+                document.querySelectorAll('.filter-btn').forEach(b => {
+                    b.classList.remove('active', 'bg-gradient-to-r', 'from-purple-500', 'to-pink-500', 'text-white');
+                    b.classList.add('text-gray-600', 'hover:text-purple-600');
+                });
+
+                // Add active class to clicked button
+                this.classList.add('active', 'bg-gradient-to-r', 'from-purple-500', 'to-pink-500', 'text-white');
+                this.classList.remove('text-gray-600', 'hover:text-purple-600');
+
+                const filter = this.getAttribute('data-filter');
+                const cards = document.querySelectorAll('.request-card');
+
+                cards.forEach(card => {
+                    const status = card.getAttribute('data-status');
+                    if (filter === 'all' || status === filter) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+
+                // Update the count display
+                const visibleCards = document.querySelectorAll('.request-card[style="display: block"], .request-card:not([style*="display: none"])');
+                const totalVisible = filter === 'all' ? cards.length : visibleCards.length;
+
+                // You can add a count display here if needed
+                console.log(`Showing ${totalVisible} ${filter} requests`);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PawsHome - Find Your Perfect Companion</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .pet-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .pet-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+        @keyframes floating {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-paw text-purple-600 text-2xl mr-2"></i>
+                    <span class="text-2xl font-bold text-gray-800">PawsHome</span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#" class="text-gray-700 hover:text-purple-600 transition-colors">Home</a>
+                    <a href="#" class="text-gray-700 hover:text-purple-600 transition-colors">About</a>
+                    <a href="#" class="text-gray-700 hover:text-purple-600 transition-colors">Pets</a>
+                    <a href="#" class="text-gray-700 hover:text-purple-600 transition-colors">Contact</a>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="{{ url_for('login') }}" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">Login</a>
+                    <a href="{{ url_for('register') }}" class="border border-purple-600 text-purple-600 px-4 py-2 rounded-lg hover:bg-purple-50 transition-colors">Sign Up</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="gradient-bg text-white py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h1 class="text-5xl font-bold mb-6 leading-tight">
+                        Find Your Perfect
+                        <span class="text-yellow-300">Furry Friend</span>
+                    </h1>
+                    <p class="text-xl mb-8 text-purple-100">
+                        Connect loving pets with caring families. Every pet deserves a forever home, and every family deserves the joy of a loyal companion.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="{{ url_for('register') }}" class="bg-yellow-400 text-purple-900 px-8 py-3 rounded-full font-semibold hover:bg-yellow-300 transition-colors">
+                            Start Adopting
+                        </a>
+                        <a href="#how-it-works" class="border-2 border-white text-white px-8 py-3 rounded-full font-semibold hover:bg-white hover:text-purple-600 transition-colors">
+                            Learn More
+                        </a>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <div class="floating">
+                        <i class="fas fa-heart text-9xl text-pink-300 opacity-80"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8 text-center">
+                <div class="p-6">
+                    <i class="fas fa-heart text-4xl text-red-500 mb-4"></i>
+                    <div class="text-3xl font-bold text-gray-800 mb-2">2,500+</div>
+                    <div class="text-gray-600">Happy Adoptions</div>
+                </div>
+                <div class="p-6">
+                    <i class="fas fa-dog text-4xl text-blue-500 mb-4"></i>
+                    <div class="text-3xl font-bold text-gray-800 mb-2">1,200+</div>
+                    <div class="text-gray-600">Dogs Available</div>
+                </div>
+                <div class="p-6">
+                    <i class="fas fa-cat text-4xl text-orange-500 mb-4"></i>
+                    <div class="text-3xl font-bold text-gray-800 mb-2">800+</div>
+                    <div class="text-gray-600">Cats Waiting</div>
+                </div>
+                <div class="p-6">
+                    <i class="fas fa-users text-4xl text-green-500 mb-4"></i>
+                    <div class="text-3xl font-bold text-gray-800 mb-2">5,000+</div>
+                    <div class="text-gray-600">Loving Families</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Pets -->
+    <section class="py-16 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-gray-800 mb-4">Meet Some Friends</h2>
+                <p class="text-xl text-gray-600">These adorable pets are looking for their forever homes</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="pet-card bg-white rounded-2xl shadow-lg overflow-hidden">
+                    <div class="h-64 bg-gradient-to-br from-yellow-200 to-orange-300 flex items-center justify-center">
+                        <i class="fas fa-dog text-6xl text-white"></i>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">Max</h3>
+                        <p class="text-gray-600 mb-4">Golden Retriever • 2 years old</p>
+                        <div class="flex justify-between items-center">
+                            <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">Friendly</span>
+                            <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">Trained</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="pet-card bg-white rounded-2xl shadow-lg overflow-hidden">
+                    <div class="h-64 bg-gradient-to-br from-pink-200 to-purple-300 flex items-center justify-center">
+                        <i class="fas fa-cat text-6xl text-white"></i>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">Luna</h3>
+                        <p class="text-gray-600 mb-4">Persian Cat • 1 year old</p>
+                        <div class="flex justify-between items-center">
+                            <span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">Calm</span>
+                            <span class="bg-pink-100 text-pink-800 px-3 py-1 rounded-full text-sm">Cuddly</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="pet-card bg-white rounded-2xl shadow-lg overflow-hidden">
+                    <div class="h-64 bg-gradient-to-br from-green-200 to-teal-300 flex items-center justify-center">
+                        <i class="fas fa-dog text-6xl text-white"></i>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">Buddy</h3>
+                        <p class="text-gray-600 mb-4">Labrador Mix • 3 years old</p>
+                        <div class="flex justify-between items-center">
+                            <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm">Playful</span>
+                            <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm">Loyal</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-12">
+                <a href="{{ url_for('register') }}" class="bg-purple-600 text-white px-8 py-3 rounded-full font-semibold hover:bg-purple-700 transition-colors">
+                    View All Pets
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section id="how-it-works" class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-gray-800 mb-4">How It Works</h2>
+                <p class="text-xl text-gray-600">Simple steps to find your new best friend</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="text-center">
+                    <div class="bg-purple-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-search text-2xl text-purple-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">1. Browse Pets</h3>
+                    <p class="text-gray-600">Explore our database of loving pets waiting for adoption. Filter by type, age, size, and more.</p>
+                </div>
+                <div class="text-center">
+                    <div class="bg-blue-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-heart text-2xl text-blue-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">2. Connect</h3>
+                    <p class="text-gray-600">Found your perfect match? Send an adoption request and connect with the current owner.</p>
+                </div>
+                <div class="text-center">
+                    <div class="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-home text-2xl text-green-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">3. Adopt</h3>
+                    <p class="text-gray-600">Complete the adoption process and welcome your new family member home!</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-16 bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+        <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+            <h2 class="text-4xl font-bold mb-6">Ready to Make a Difference?</h2>
+            <p class="text-xl mb-8">Join thousands of families who have found their perfect companion through PawsHome</p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="{{ url_for('register') }}" class="bg-yellow-400 text-purple-900 px-8 py-3 rounded-full font-semibold hover:bg-yellow-300 transition-colors">
+                    Adopt a Pet
+                </a>
+                <a href="{{ url_for('register') }}" class="border-2 border-white text-white px-8 py-3 rounded-full font-semibold hover:bg-white hover:text-purple-600 transition-colors">
+                    List a Pet
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center mb-4">
+                        <i class="fas fa-paw text-purple-400 text-2xl mr-2"></i>
+                        <span class="text-2xl font-bold">PawsHome</span>
+                    </div>
+                    <p class="text-gray-400">Connecting loving pets with caring families since 2020.</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">About Us</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Adopt</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">List a Pet</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Support</h3>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Help Center</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Safety</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Community</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Resources</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Follow Us</h3>
+                    <div class="flex space-x-4 text-2xl">
+                        <a href="#" class="text-gray-400 hover:text-blue-400 transition-colors"><i class="fab fa-facebook"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-pink-400 transition-colors"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-blue-300 transition-colors"><i class="fab fa-twitter"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2024 PawsHome. All rights reserved. Made with ❤️ for pets and their families.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
