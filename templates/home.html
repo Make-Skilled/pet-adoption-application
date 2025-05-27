@@ -163,8 +163,14 @@
                             {% elif pet.pet_type == 'cat' %}from-pink-200 to-purple-300
                             {% elif pet.pet_type == 'bird' %}from-blue-200 to-indigo-300
                             {% else %}from-green-200 to-teal-300{% endif %}
-                            flex items-center justify-center relative">
-                            <i class="fas fa-{{ 'dog' if pet.pet_type == 'dog' else 'cat' if pet.pet_type == 'cat' else 'dove' if pet.pet_type == 'bird' else 'paw' }} text-6xl text-white"></i>
+                            flex items-center justify-center relative overflow-hidden">
+                            {% if pet.images and pet.images|length > 0 %}
+                                <img src="{{ url_for('static', filename=pet.images[0]) }}"
+                                     alt="{{ pet.name }}"
+                                     class="w-full h-full object-cover">
+                            {% else %}
+                                <i class="fas fa-{{ 'dog' if pet.pet_type == 'dog' else 'cat' if pet.pet_type == 'cat' else 'dove' if pet.pet_type == 'bird' else 'paw' }} text-6xl text-white"></i>
+                            {% endif %}
                             <div class="absolute top-3 right-3
                                 {% if pet.status == 'available' %}bg-green-500
                                 {% elif pet.status == 'pending' %}bg-yellow-500

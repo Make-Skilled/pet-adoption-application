@@ -3,7 +3,10 @@ from pymongo import MongoClient
 from bson import ObjectId
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 import re
+import os
+import uuid
 
 # Database configuration
 try:
@@ -26,6 +29,15 @@ except Exception as e:
 app = Flask(__name__)
 app.secret_key = "1234567890"  # In production, use a secure random key
 
+# File upload configuration
+UPLOAD_FOLDER = 'static/uploads/pets'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+# Create upload directory if it doesn't exist
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
 # Helper function to validate email
 def is_valid_email(email):
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
@@ -34,6 +46,37 @@ def is_valid_email(email):
 # Helper function to validate password strength
 def is_strong_password(password):
     return len(password) >= 8
+
+# Helper function to check allowed file extensions
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Helper function to save uploaded file
+def save_uploaded_file(file):
+    print(f"🐾 save_uploaded_file called with file: {file}")
+    print(f"🐾 File filename: {file.filename if file else 'No file'}")
+
+    if file and allowed_file(file.filename):
+        print(f"🐾 File is valid, proceeding to save")
+        # Generate unique filename
+        filename = secure_filename(file.filename)
+        unique_filename = f"{uuid.uuid4()}_{filename}"
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        print(f"🐾 Saving to path: {file_path}")
+
+        try:
+            file.save(file_path)
+            print(f"🐾 File saved successfully")
+            return f"uploads/pets/{unique_filename}"
+        except Exception as e:
+            print(f"🐾 Error saving file: {e}")
+            return None
+    else:
+        print(f"🐾 File validation failed")
+        if file:
+            print(f"🐾 File exists but allowed_file returned: {allowed_file(file.filename)}")
+        return None
 
 @app.route("/")
 def landing():
@@ -165,7 +208,7 @@ def home():
     if petdetails is not None:
         try:
             # Build query
-            query = {"status": {"$ne": "adopted"}}  # Don't show adopted pets
+            query = {}  # Show all pets including adopted ones
 
             if pet_type != 'all':
                 query["pet_type"] = pet_type
@@ -236,6 +279,34 @@ def add_pet():
             flash("Database not available. Please try again later.", "error")
             return render_template("addpet.html")
 
+        # Handle image uploads
+        image_paths = []
+        print(f"🐾 Files in request: {list(request.files.keys())}")
+
+        # Check for photo1 and photo2 from the form
+        for i in range(1, 3):  # Handle photo1 and photo2
+            file_key = f'photo{i}'
+            print(f"🐾 Checking for file key: {file_key}")
+            if file_key in request.files:
+                file = request.files[file_key]
+                print(f"🐾 File found: {file.filename}")
+                if file.filename:  # If a file was selected
+                    print(f"🐾 Attempting to save file: {file.filename}")
+                    saved_path = save_uploaded_file(file)
+                    if saved_path:
+                        print(f"🐾 File saved successfully: {saved_path}")
+                        image_paths.append(saved_path)
+                    else:
+                        print(f"🐾 Failed to save file: {file.filename}")
+                        flash(f"Invalid file format for photo {i}. Please use PNG, JPG, JPEG, or GIF.", "error")
+                        return render_template("addpet.html")
+                else:
+                    print(f"🐾 No filename for {file_key}")
+            else:
+                print(f"🐾 File key {file_key} not found in request.files")
+
+        print(f"🐾 Final image_paths: {image_paths}")
+
         # Get form data
         pet_data = {
             "name": request.form.get("pet_name", "").strip(),
@@ -256,6 +327,7 @@ def add_pet():
             "phone": request.form.get("phone", "").strip(),
             "adoption_fee": request.form.get("adoption_fee", "0"),
             "description": request.form.get("pet_story", "").strip(),
+            "images": image_paths,  # Add uploaded images
             "owner_id": session["user_id"],
             "status": "available",
             "created_at": datetime.now(),
@@ -717,6 +789,13 @@ def my_adoption_requests():
                 owner = users.find_one({"_id": ObjectId(req["pet_owner_id"])})
                 req["owner_name"] = owner["name"] if owner else "Unknown"
                 req["owner_email"] = owner["email"] if owner else "Unknown"
+                req["owner_phone"] = owner.get("phone", "") if owner else ""
+
+                # Also get pet owner's contact info from the pet data (if available)
+                if pet and pet.get("phone"):
+                    req["pet_contact_phone"] = pet["phone"]
+                else:
+                    req["pet_contact_phone"] = ""
 
         except Exception as e:
             flash("Error loading your adoption requests. Please try again.", "error")

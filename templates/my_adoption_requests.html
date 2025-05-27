@@ -218,12 +218,29 @@
                                         <i class="fas fa-clock mr-2"></i>Waiting for Response
                                     </div>
                                 {% elif request.status == 'approved' %}
-                                    <div class="bg-green-100 text-green-800 px-4 py-2 rounded-lg text-center">
+                                    <div class="bg-green-100 text-green-800 px-4 py-2 rounded-lg text-center mb-3">
                                         <i class="fas fa-check mr-2"></i>Congratulations! Approved
                                     </div>
-                                    <button class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-blue-700 transition duration-300">
-                                        <i class="fas fa-envelope mr-2"></i>Contact Owner
-                                    </button>
+                                    <!-- Owner Contact Information -->
+                                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+                                        <h6 class="font-semibold text-blue-800 text-sm mb-2">
+                                            <i class="fas fa-address-book mr-1"></i>Owner Contact:
+                                        </h6>
+                                        <div class="text-sm text-blue-700">
+                                            <div class="flex items-center mb-1">
+                                                <i class="fas fa-envelope mr-2 text-blue-600"></i>
+                                                <a href="mailto:{{ request.owner_email }}" class="hover:underline">{{ request.owner_email }}</a>
+                                            </div>
+                                            {% if request.owner_phone or request.pet_contact_phone %}
+                                            <div class="flex items-center">
+                                                <i class="fas fa-phone mr-2 text-blue-600"></i>
+                                                <a href="tel:{{ request.owner_phone or request.pet_contact_phone }}" class="hover:underline">
+                                                    {{ request.owner_phone or request.pet_contact_phone }}
+                                                </a>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
                                 {% elif request.status == 'rejected' %}
                                     <div class="bg-red-100 text-red-800 px-4 py-2 rounded-lg text-center">
                                         <i class="fas fa-times mr-2"></i>Request Declined
